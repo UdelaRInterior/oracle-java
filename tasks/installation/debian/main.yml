@@ -44,10 +44,11 @@
   when: oracle_java_set_as_default
   become: yes
 
-- name: Import SSL certificate from google.com to a given cacerts keystore
-  java_cert:
-    cert_url: google.com
-    cert_port: 443
-    keystore_path: /etc/ssl/certs/java/cacerts
-    keystore_pass: changeit
-    state: present
+- name: java version
+  shell: 'javac -version | cut -d " " -f2 | cut -d "." -f1'
+  ignore_errors: yes
+  register: version
+
+- name: Change certificates pkcs12 to jks only when java 11 or later
+  command: keytool -importkeystore -destkeystore /etc/ssl/certs/java/cacerts -deststoretype jks -deststorepass changeit -srckeystore /etc/ssl/certs/java/cacerts -srcstoretype pkcs12 -srcstorepass changeit
+  when: version.stdout > '10'
